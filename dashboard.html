@@ -1,0 +1,389 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Xtracut Performance Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#eef1f6;--panel:#ffffff;--brd:#e3e8ef;--ink:#1e293b;--head:#0f172a;--mut:#64748b;
+--teal:#0d9488;--teal2:#0f766e;--violet:#7c3aed;--amber:#d97706;--red:#dc2626;--blue:#2563eb;--green:#059669}
+body{font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;color:var(--ink);background:var(--bg);
+min-height:100vh;-webkit-font-smoothing:antialiased;font-size:13px}
+.wrap{max-width:1340px;margin:0 auto;padding:18px 20px 36px}
+header.top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+background:var(--panel);border:1px solid var(--brd);border-radius:12px;padding:12px 18px;margin-bottom:16px;
+box-shadow:0 1px 3px rgba(15,23,42,.06)}
+.brand{display:flex;align-items:center;gap:11px}
+.logo{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#14b8a6,#0d9488);
+display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:18px;
+box-shadow:0 2px 6px rgba(13,148,136,.35)}
+h1{font-size:16.5px;font-weight:700;letter-spacing:-.2px;color:var(--head)}
+.sub{color:var(--mut);font-size:11.5px;margin-top:2px;font-weight:500}
+.meta{text-align:right;color:var(--mut);font-size:11px;line-height:1.6;font-weight:500}
+.meta b{color:var(--teal);font-weight:700}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px}
+.tab{background:var(--panel);border:1px solid var(--brd);color:#475569;padding:7px 13px;border-radius:8px;
+cursor:pointer;font-size:12.5px;font-weight:600;transition:all .15s ease;white-space:nowrap}
+.tab:hover{border-color:var(--teal);color:var(--teal2)}
+.tab.active{background:var(--teal);color:#fff;border-color:var(--teal);box-shadow:0 2px 8px -2px rgba(13,148,136,.5)}
+.tab.disabled{opacity:.55;cursor:not-allowed;border-style:dashed}
+.tab.disabled:hover{border-color:var(--brd);color:#475569}
+.panel-title{font-size:15.5px;font-weight:700;letter-spacing:-.2px;color:var(--head);margin:2px 0 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:20px;background:#f1f5f9;color:var(--mut);border:1px solid var(--brd)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(172px,1fr));gap:12px;margin-bottom:20px}
+.card{position:relative;overflow:hidden;border-radius:10px;padding:13px 15px;background:var(--panel);border:1px solid var(--brd);
+box-shadow:0 1px 3px rgba(15,23,42,.05);transition:transform .15s ease,box-shadow .15s ease;
+animation:rise .35s ease both}
+.card:hover{transform:translateY(-2px);box-shadow:0 6px 18px -8px rgba(15,23,42,.25)}
+.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--teal)}
+.card.amber::before{background:var(--amber)}.card.red::before{background:var(--red)}
+.card.blue::before{background:var(--blue)}.card.violet::before{background:var(--violet)}
+.card .lbl{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+.card .val{font-size:21px;font-weight:800;margin-top:5px;line-height:1.05;letter-spacing:-.4px;color:var(--head);font-variant-numeric:tabular-nums}
+.card .vsub{font-size:11px;color:var(--mut);margin-top:6px;line-height:1.5;font-weight:500}
+.card .vsub .g{color:var(--teal);font-weight:700}.card .vsub .b{color:var(--amber);font-weight:700}
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;margin-top:6px}
+.badge.up{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}
+.badge.down{background:#fee2e2;color:#b91c1c;border:1px solid #fecaca}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(385px,1fr));gap:14px}
+.chart-box{background:var(--panel);border:1px solid var(--brd);border-radius:11px;padding:14px 16px;
+box-shadow:0 1px 3px rgba(15,23,42,.05);animation:rise .35s ease both}
+.chart-box.full{grid-column:1/-1}
+.chart-box h3{font-size:12.5px;font-weight:700;margin-bottom:11px;color:var(--head);display:flex;align-items:center;gap:7px}
+.chart-box h3::before{content:"";width:7px;height:7px;border-radius:2px;background:var(--teal)}
+.chart-box .cwrap{position:relative;height:218px}
+.note{color:var(--mut);font-size:11.5px;background:var(--panel);border:1px dashed var(--brd);border-radius:10px;padding:11px 14px;margin-bottom:14px}
+footer{color:#94a3b8;font-size:11px;text-align:center;margin-top:26px;padding-top:14px;border-top:1px solid var(--brd)}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.card:nth-child(2){animation-delay:.03s}.card:nth-child(3){animation-delay:.06s}.card:nth-child(4){animation-delay:.09s}
+.card:nth-child(5){animation-delay:.12s}.card:nth-child(6){animation-delay:.15s}.card:nth-child(7){animation-delay:.18s}
+.chart-box:nth-child(2){animation-delay:.06s}.chart-box:nth-child(3){animation-delay:.1s}.chart-box:nth-child(4){animation-delay:.14s}
+.ins{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px}
+.insbox{background:var(--panel);border:1px solid var(--brd);border-radius:11px;padding:14px 16px;box-shadow:0 1px 3px rgba(15,23,42,.05)}
+.insbox .t{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut);font-weight:700}
+.insbox .v{font-size:23px;font-weight:800;margin-top:4px;color:var(--head);font-variant-numeric:tabular-nums}
+.insbox .d{font-size:11px;color:var(--mut);margin-top:5px;line-height:1.5}
+.tbl{width:100%;border-collapse:separate;border-spacing:0;background:var(--panel);border:1px solid var(--brd);border-radius:11px;overflow:hidden;font-size:12.5px;box-shadow:0 1px 3px rgba(15,23,42,.05)}
+.tbl th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut);font-weight:700;padding:10px 13px;background:#f8fafc;border-bottom:1px solid var(--brd)}
+.tbl td{padding:10px 13px;border-bottom:1px solid #eef2f7;color:var(--ink);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tbody tr:hover td{background:#f8fafc}
+.tbl .cname{font-weight:700;color:var(--head)}
+.num{font-variant-numeric:tabular-nums}
+.mini{font-size:10.5px;color:var(--mut)}
+.st{display:inline-block;font-weight:700;font-size:10.5px;padding:3px 10px;border-radius:20px}
+.st.ok{background:#dcfce7;color:#15803d}.st.no{background:#fee2e2;color:#b91c1c}.st.mid{background:#fef3c7;color:#b45309}
+.tag{display:inline-block;font-weight:600;padding:1px 7px;border-radius:5px;margin:1px 3px 1px 0;font-size:11px}
+.tag.ok{background:#dcfce7;color:#15803d}.tag.no{background:#fee2e2;color:#b91c1c}.tag.mid{background:#fef3c7;color:#b45309}
+.sleg{font-size:10.5px;font-weight:600;color:var(--mut);margin-left:auto;display:inline-flex;align-items:center;gap:5px}
+.sleg .d{width:8px;height:8px;border-radius:2px;display:inline-block;margin:0 2px 0 8px}
+.sleg .d.pos{background:#0d9488}.sleg .d.neu{background:#94a3b8}.sleg .d.neg{background:#ef4444}
+.ls-grid{display:grid;grid-template-columns:1.55fr 1fr;gap:16px;align-items:start}
+@media(max-width:820px){.ls-grid{grid-template-columns:1fr}}
+.ls-cap{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);margin-bottom:7px}
+.ls-tbl{width:100%;border-collapse:separate;border-spacing:0;border:1px solid var(--brd);border-radius:9px;overflow:hidden;font-size:12px}
+.ls-tbl th{text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);font-weight:700;padding:8px 11px;background:#f8fafc;border-bottom:1px solid var(--brd)}
+.ls-tbl td{padding:7px 11px;border-bottom:1px solid #eef2f7;color:var(--ink)}
+.ls-tbl tbody tr:hover td{background:#f8fafc}
+.ls-tbl td.num,.ls-tbl th.num{text-align:right;font-variant-numeric:tabular-nums}
+.ls-tbl td.mut{color:var(--mut)}
+.ls-tbl tr.tot td{font-weight:700;color:var(--head);background:#f1f5f9;border-top:1px solid var(--brd);border-bottom:none}
+.ls-tbl .d{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:7px;vertical-align:middle}
+.ls-tbl .d.pos{background:#0d9488}.ls-tbl .d.neu{background:#94a3b8}.ls-tbl .d.neg{background:#ef4444}
+.subtabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.subtab{background:#f1f5f9;border:1px solid var(--brd);color:#475569;padding:6px 13px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:600;transition:.15s}
+.subtab:hover{border-color:var(--teal);color:var(--teal2)}
+.subtab.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+.mtxwrap{overflow-x:auto;border-radius:10px;border:1px solid var(--brd)}
+.mtx{width:100%;border-collapse:separate;border-spacing:0;background:var(--panel);font-size:10.5px;min-width:780px}
+.mtx th{text-align:right;font-size:8.5px;text-transform:uppercase;letter-spacing:.2px;color:var(--mut);font-weight:700;padding:5px 7px;background:#f8fafc;border-bottom:1px solid var(--brd);white-space:nowrap}
+.mtx th:first-child,.mtx td:first-child{text-align:left;position:sticky;left:0;background:var(--panel)}
+.mtx th:first-child{background:#f8fafc}
+.mtx td{padding:4px 7px;border-bottom:1px solid #f1f5f9;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.mtx tr:last-child td{border-bottom:none}
+.mtx tr.tot td{font-weight:800;background:#f8fafc;color:var(--head)}
+.mtx td.cn{font-weight:600;color:var(--head)}
+.displeg{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:12px;font-size:11px;color:var(--mut);font-weight:600}
+.displeg i{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:-1px}
+.disp{display:flex;flex-direction:column;gap:9px}
+.disprow{display:grid;grid-template-columns:150px 1fr;gap:12px;align-items:center}
+.dispname{font-size:11.5px;font-weight:600;color:var(--head)}
+.dispbar{display:flex;height:22px;border-radius:5px;overflow:hidden;border:1px solid var(--brd);background:#f1f5f9}
+.dispseg{height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;min-width:0}
+.dispseg.appointment{background:#16a34a}.dispseg.consulted{background:#0d9488}.dispseg.interested{background:#2563eb}.dispseg.unreachable{background:#f59e0b}.dispseg.lost{background:#ef4444}
+</style></head><body><div class="wrap">
+<header class="top">
+  <div class="brand"><div class="logo">X</div>
+    <div><h1>Xtracut &mdash; Performance Marketing Dashboard</h1>
+    <div class="sub">CRM leads, spend &amp; paid-application tracking across campuses</div></div></div>
+  <div class="meta">As of <b>Jun 05, 2026</b><br>Generated 2026-06-06 11:37<br><span id="srccount"></span></div>
+</header>
+<div class="tabs" id="tabs"></div>
+<div id="panel"></div>
+<footer>Source: SharePoint &mdash; June&rsquo;26 performance workbooks &middot; Figures are month-to-date (Jun 1&ndash;Jun 05, 2026) &middot; Rebuild by re-running generate_dashboard.py</footer>
+</div>
+<script>
+const DATA = {"generated": "2026-06-06 11:37", "as_of": "Jun 05, 2026", "source_folder": "/sessions/intelligent-fervent-brown/mnt/June'26", "colleges": [{"key": "SRM IST RMP", "label": "SRM IST RMP", "group": "SRM", "channels": ["google"], "available": true, "needs_review": false, "source_file": "SRM IST RMP Performance Report- Jun'26.xlsx", "kpi": {"spent_excl": 102512.86, "gst": 18452.32, "total_incl": 120965.18, "target_leads": 500, "google_leads": 955, "meta_leads": 0, "actual_leads": 955, "crm_leads": 641, "meta_spent": 0.0, "meta_gst": 0.0, "google_spent": 102512.86, "google_gst": 18452.32, "target_cpl": 350, "actual_cpl": 107.3, "target_app": 125, "paid_app": 269, "untouched": 558}, "series": [{"date": "Jun 01", "target_leads": 100.0, "actual_leads": 216.0, "google_leads": 216.0, "meta_leads": 0, "target_cpl": 350, "actual_cpl": 94.2, "target_app": 25.0, "paid_app": 69.0}, {"date": "Jun 02", "target_leads": 100.0, "actual_leads": 240.0, "google_leads": 240.0, "meta_leads": 0, "target_cpl": 350, "actual_cpl": 82.9, "target_app": 25.0, "paid_app": 58.0}, {"date": "Jun 03", "target_leads": 100.0, "actual_leads": 212.0, "google_leads": 212.0, "meta_leads": 0, "target_cpl": 350, "actual_cpl": 90.4, "target_app": 25.0, "paid_app": 56.0}, {"date": "Jun 04", "target_leads": 100.0, "actual_leads": 189.0, "google_leads": 189.0, "meta_leads": 0, "target_cpl": 350, "actual_cpl": 111.7, "target_app": 25.0, "paid_app": 56.0}, {"date": "Jun 05", "target_leads": 100.0, "actual_leads": 98.0, "google_leads": 98.0, "meta_leads": 0, "target_cpl": 350, "actual_cpl": 224.4, "target_app": 25.0, "paid_app": 30.0}], "lead_stage": {"labels": ["Enrolled", "Hot", "Warm", "Interested in Admission", "Untouched", "Call Attempted", "Not Reachable", "No Response", "NOT INTERESTED", "Closed", "Invalid"], "leads": [1, 8, 5, 8, 558, 26, 15, 12, 5, 2, 1], "pct": [0.2, 1.2, 0.8, 1.2, 87.1, 4.1, 2.3, 1.9, 0.8, 0.3, 0.2], "cats": ["pos", "pos", "pos", "pos", "neu", "neu", "neg", "neg", "neg", "neg", "neg"], "total": 641, "temp": [["Hot", 22], ["Warm", 584], ["Cold", 35]]}}, {"key": "SRM IST Trichy", "label": "SRM IST Trichy", "group": "SRM", "channels": ["google"], "available": true, "needs_review": false, "source_file": "SRM IST Trichy Performance Report - May'26.xlsx", "kpi": {"spent_excl": 235309.83, "gst": 42355.77, "total_incl": 277665.59, "target_leads": 750, "google_leads": 1023, "meta_leads": 0, "actual_leads": 1023, "crm_leads": 1032, "meta_spent": 0.0, "meta_gst": 0.0, "google_spent": 235309.83, "google_gst": 42355.77, "target_cpl": 500, "actual_cpl": 230.0, "target_app": 60, "paid_app": 81, "untouched": 1013}, "series": [{"date": "Jun 01", "target_leads": 150.0, "actual_leads": 215.1, "google_leads": 215.1, "meta_leads": 0, "target_cpl": 500, "actual_cpl": 266.0, "target_app": 12.0, "paid_app": 18.0}, {"date": "Jun 02", "target_leads": 150.0, "actual_leads": 224.1, "google_leads": 224.1, "meta_leads": 0, "target_cpl": 500, "actual_cpl": 206.0, "target_app": 12.0, "paid_app": 18.0}, {"date": "Jun 03", "target_leads": 150.0, "actual_leads": 211.9, "google_leads": 211.9, "meta_leads": 0, "target_cpl": 500, "actual_cpl": 215.3, "target_app": 12.0, "paid_app": 18.0}, {"date": "Jun 04", "target_leads": 150.0, "actual_leads": 231.6, "google_leads": 231.6, "meta_leads": 0, "target_cpl": 500, "actual_cpl": 216.2, "target_app": 12.0, "paid_app": 16.0}, {"date": "Jun 05", "target_leads": 150.0, "actual_leads": 140.5, "google_leads": 140.5, "meta_leads": 0, "target_cpl": 500, "actual_cpl": 258.1, "target_app": 12.0, "paid_app": 11.0}], "lead_stage": {"labels": ["Enrolled", "Submitted", "Warm", "Untouched", "Not Reachable", "Cold", "Closed"], "leads": [2, 1, 1, 1013, 8, 1, 6], "pct": [0.2, 0.1, 0.1, 98.2, 0.8, 0.1, 0.6], "cats": ["pos", "pos", "pos", "neu", "neg", "neg", "neg"], "total": 1032, "temp": [["Hot", 4], ["Warm", 1013], ["Cold", 15]]}}, {"key": "SRM Easwari", "label": "SRM EEC (Easwari)", "group": "SRM", "channels": ["google"], "available": true, "needs_review": false, "source_file": "SRM Easwari Performance Report- May'26.xlsx", "kpi": {"spent_excl": 71437.0, "gst": 12858.66, "total_incl": 84295.66, "target_leads": 125, "google_leads": 94, "meta_leads": 0, "actual_leads": 94, "crm_leads": 94, "meta_spent": 0.0, "meta_gst": 0.0, "google_spent": 71437.0, "google_gst": 12858.66, "target_cpl": 350, "actual_cpl": 760.0, "target_app": 15, "paid_app": 30, "untouched": 84}, "series": [{"date": "Jun 01", "target_leads": 25.0, "actual_leads": 17.0, "google_leads": 17.0, "meta_leads": 0, "target_cpl": 350, "actual_cpl": 892.2, "target_app": 3.0, "paid_app": 4.0}, {"date": "Jun 02", "target_leads": 25.0, "actual_leads": 26.0, "google_leads": 26.0, "meta_leads": 0, "target_cpl": 350, "actual_cpl": 596.9, "target_app": 3.0, "paid_app": 12.0}, {"date": "Jun 03", "target_leads": 25.0, "actual_leads": 14.0, "google_leads": 14.0, "meta_leads": 0, "target_cpl": 350, "actual_cpl": 1150.4, "target_app": 3.0, "paid_app": 8.0}, {"date": "Jun 04", "target_leads": 25.0, "actual_leads": 13.0, "google_leads": 13.0, "meta_leads": 0, "target_cpl": 350, "actual_cpl": 1206.5, "target_app": 3.0, "paid_app": 5.0}, {"date": "Jun 05", "target_leads": 25.0, "actual_leads": 24.0, "google_leads": 24.0, "meta_leads": 0, "target_cpl": 350, "actual_cpl": 373.4, "target_app": 3.0, "paid_app": 1.0}], "lead_stage": {"labels": ["Untouched"], "leads": [84], "pct": [100.0], "cats": ["neu"], "total": 84, "temp": [["Hot", 0], ["Warm", 84], ["Cold", 0]]}}, {"key": "SRM TRP", "label": "SRM TRP", "group": "SRM", "channels": ["google"], "available": true, "needs_review": false, "source_file": "SRM TRP Performance Report- May'26.xlsx", "kpi": {"spent_excl": 12900.61, "gst": 2322.11, "total_incl": 15222.72, "target_leads": 75, "google_leads": 22, "meta_leads": 0, "actual_leads": 22, "crm_leads": 22, "meta_spent": 0.0, "meta_gst": 0.0, "google_spent": 12900.61, "google_gst": 2322.11, "target_cpl": 400, "actual_cpl": 586.9, "target_app": 5, "paid_app": 8, "untouched": 30}, "series": [{"date": "Jun 01", "target_leads": 15.0, "actual_leads": 1.0, "google_leads": 1.0, "meta_leads": 0, "target_cpl": 400, "actual_cpl": 1930.0, "target_app": 1.0, "paid_app": 3.0}, {"date": "Jun 02", "target_leads": 15.0, "actual_leads": 1.0, "google_leads": 1.0, "meta_leads": 0, "target_cpl": 400, "actual_cpl": 1454.6, "target_app": 1.0, "paid_app": 0}, {"date": "Jun 03", "target_leads": 15.0, "actual_leads": 3.0, "google_leads": 3.0, "meta_leads": 0, "target_cpl": 400, "actual_cpl": 677.3, "target_app": 1.0, "paid_app": 3.0}, {"date": "Jun 04", "target_leads": 15.0, "actual_leads": 2.0, "google_leads": 2.0, "meta_leads": 0, "target_cpl": 400, "actual_cpl": 1499.9, "target_app": 1.0, "paid_app": 2.0}, {"date": "Jun 05", "target_leads": 15.0, "actual_leads": 15.0, "google_leads": 15.0, "meta_leads": 0, "target_cpl": 400, "actual_cpl": 300.7, "target_app": 1.0, "paid_app": 0}], "lead_stage": {"labels": ["Untouched"], "leads": [30], "pct": [100.0], "cats": ["neu"], "total": 30, "temp": [["Hot", 0], ["Warm", 30], ["Cold", 0]]}}, {"key": "SRM ASC", "label": "SRM ASC", "group": "SRM", "channels": ["google"], "available": true, "needs_review": false, "source_file": "SRM ASC Performance Report- May'26.xlsx", "kpi": {"spent_excl": 51453.66, "gst": 9261.66, "total_incl": 60715.32, "target_leads": 125, "google_leads": 266, "meta_leads": 0, "actual_leads": 266, "crm_leads": 138, "meta_spent": 0.0, "meta_gst": 0.0, "google_spent": 51453.66, "google_gst": 9261.66, "target_cpl": 400, "actual_cpl": 193.4, "target_app": 10, "paid_app": 19, "untouched": 138}, "series": [{"date": "Jun 01", "target_leads": 25.0, "actual_leads": 48.0, "google_leads": 48.0, "meta_leads": 0, "target_cpl": 400, "actual_cpl": 257.9, "target_app": 2.0, "paid_app": 5.0}, {"date": "Jun 02", "target_leads": 25.0, "actual_leads": 64.0, "google_leads": 64.0, "meta_leads": 0, "target_cpl": 400, "actual_cpl": 163.2, "target_app": 2.0, "paid_app": 9.0}, {"date": "Jun 03", "target_leads": 25.0, "actual_leads": 48.0, "google_leads": 48.0, "meta_leads": 0, "target_cpl": 400, "actual_cpl": 201.9, "target_app": 2.0, "paid_app": 2.0}, {"date": "Jun 04", "target_leads": 25.0, "actual_leads": 65.0, "google_leads": 65.0, "meta_leads": 0, "target_cpl": 400, "actual_cpl": 145.9, "target_app": 2.0, "paid_app": 2.0}, {"date": "Jun 05", "target_leads": 25.0, "actual_leads": 41.0, "google_leads": 41.0, "meta_leads": 0, "target_cpl": 400, "actual_cpl": 230.7, "target_app": 2.0, "paid_app": 1.0}], "lead_stage": {"labels": ["Untouched"], "leads": [138], "pct": [100.0], "cats": ["neu"], "total": 138, "temp": [["Hot", 0], ["Warm", 138], ["Cold", 0]]}}, {"key": "Krea", "label": "Krea University", "group": "OTHER", "channels": ["meta", "google"], "available": true, "needs_review": false, "source_file": "Krea University Performance Report- May'26.xlsx", "kpi": {"spent_excl": 71447.23, "gst": 12860.5, "total_incl": 84307.73, "target_leads": 210, "google_leads": 333, "meta_leads": 13, "actual_leads": 346, "crm_leads": 346, "meta_spent": 4932.94, "meta_gst": 887.93, "google_spent": 66514.29, "google_gst": 11972.57, "target_cpl": null, "actual_cpl": 206.5, "target_app": 5, "paid_app": 7, "untouched": 293}, "series": [{"date": "Jun 01", "target_leads": 50.0, "actual_leads": 95.0, "google_leads": 92.0, "meta_leads": 3.0, "target_cpl": null, "actual_cpl": 267.8, "target_app": 1.0, "paid_app": 5.0}, {"date": "Jun 02", "target_leads": 50.0, "actual_leads": 126.0, "google_leads": 124.0, "meta_leads": 2.0, "target_cpl": null, "actual_cpl": 195.2, "target_app": 1.0, "paid_app": 0}, {"date": "Jun 03", "target_leads": 50.0, "actual_leads": 104.0, "google_leads": 101.0, "meta_leads": 3.0, "target_cpl": null, "actual_cpl": 226.1, "target_app": 1.0, "paid_app": 0}, {"date": "Jun 04", "target_leads": 30.0, "actual_leads": 18.0, "google_leads": 16.0, "meta_leads": 2.0, "target_cpl": null, "actual_cpl": 529.5, "target_app": 1.0, "paid_app": 1.0}, {"date": "Jun 05", "target_leads": 30.0, "actual_leads": 3.0, "google_leads": 0, "meta_leads": 3.0, "target_cpl": null, "actual_cpl": 409.0, "target_app": 1.0, "paid_app": 1.0}], "lead_stage": {"labels": ["Paid, Submit", "Call Back", "Untouched", "No Response", "wrong number", "Not Reachable", "Cold", "NOT INTERESTED", "Not Eligible", "Junk", "Duplicate registry", "Invalid Number"], "leads": [1, 1, 293, 13, 2, 2, 1, 17, 9, 8, 1, 1], "pct": [0.3, 0.3, 84.0, 3.7, 0.6, 0.6, 0.3, 4.9, 2.6, 2.3, 0.3, 0.3], "cats": ["pos", "pos", "neu", "neg", "neg", "neg", "neg", "neg", "neg", "neg", "neg", "neg"], "total": 349, "temp": [["Hot", 2], ["Warm", 293], ["Cold", 54]]}}, {"key": "Karunya", "label": "Karunya University", "group": "KARUNYA", "channels": ["google"], "available": true, "needs_review": false, "source_file": "Karunya Performance Report- May'26.xlsx", "kpi": {"spent_excl": 56916.98, "gst": 10245.06, "total_incl": 67162.04, "target_leads": 92, "google_leads": 170, "meta_leads": 0, "actual_leads": 170, "crm_leads": 154, "meta_spent": 0.0, "meta_gst": 0.0, "google_spent": 56916.98, "google_gst": 10245.06, "target_cpl": 350, "actual_cpl": 334.4, "target_app": 0, "paid_app": 0, "untouched": null}, "series": [{"date": "Jun 01", "target_leads": 23.0, "actual_leads": 36.2, "google_leads": 36.2, "meta_leads": 0, "target_cpl": 350, "actual_cpl": 397.6, "target_app": 0, "paid_app": 0}, {"date": "Jun 02", "target_leads": 23.0, "actual_leads": 50.7, "google_leads": 50.7, "meta_leads": 0, "target_cpl": 350, "actual_cpl": 271.6, "target_app": 0, "paid_app": 0}, {"date": "Jun 03", "target_leads": 23.0, "actual_leads": 42.3, "google_leads": 42.3, "meta_leads": 0, "target_cpl": 350, "actual_cpl": 375.5, "target_app": 0, "paid_app": 0}, {"date": "Jun 04", "target_leads": 23.0, "actual_leads": 41.0, "google_leads": 41.0, "meta_leads": 0, "target_cpl": 350, "actual_cpl": 313.7, "target_app": 0, "paid_app": 0}], "lead_stage": null}, {"key": "Sai University", "label": "Sai University", "group": "OTHER", "channels": ["meta", "google"], "available": true, "needs_review": false, "source_file": "Sai University Performance Report - May'26.xlsx", "kpi": {"spent_excl": 39809.61, "gst": 7165.73, "total_incl": 46975.34, "target_leads": 250, "google_leads": 35, "meta_leads": 18, "actual_leads": 53, "crm_leads": 53, "meta_spent": 14092.52, "meta_gst": 2536.65, "google_spent": 25717.09, "google_gst": 4629.08, "target_cpl": 1100, "actual_cpl": 751.1, "target_app": 5, "paid_app": 1, "untouched": null}, "series": [{"date": "Jun 01", "target_leads": 50.0, "actual_leads": 15.0, "google_leads": 3.0, "meta_leads": 12.0, "target_cpl": 1100, "actual_cpl": 605.6, "target_app": 1.0, "paid_app": 0}, {"date": "Jun 02", "target_leads": 50.0, "actual_leads": 14.0, "google_leads": 13.0, "meta_leads": 1.0, "target_cpl": 1100, "actual_cpl": 369.8, "target_app": 1.0, "paid_app": 0}, {"date": "Jun 03", "target_leads": 50.0, "actual_leads": 6.0, "google_leads": 6.0, "meta_leads": 0, "target_cpl": 1100, "actual_cpl": 1025.6, "target_app": 1.0, "paid_app": 1.0}, {"date": "Jun 04", "target_leads": 50.0, "actual_leads": 7.0, "google_leads": 7.0, "meta_leads": 0, "target_cpl": 1100, "actual_cpl": 928.8, "target_app": 1.0, "paid_app": 0}, {"date": "Jun 05", "target_leads": 50.0, "actual_leads": 11.0, "google_leads": 6.0, "meta_leads": 5.0, "target_cpl": 1100, "actual_cpl": 1172.0, "target_app": 1.0, "paid_app": 0}], "lead_stage": null}, {"key": "Remo", "label": "Remo", "group": "OTHER", "channels": ["meta", "google"], "available": true, "needs_review": false, "source_file": "Remo Performance Report- May'26.xlsx", "kpi": {"spent_excl": 37213.24, "gst": 6698.38, "total_incl": 43911.62, "target_leads": 100, "google_leads": 22, "meta_leads": 119, "actual_leads": 141, "crm_leads": 141, "meta_spent": 19950.44, "meta_gst": 3591.08, "google_spent": 17262.8, "google_gst": 3107.3, "target_cpl": 300, "actual_cpl": 263.9, "target_app": 5, "paid_app": 0, "untouched": null}, "series": [{"date": "Jun 01", "target_leads": 20.0, "actual_leads": 25.0, "google_leads": 6.0, "meta_leads": 19.0, "target_cpl": 300, "actual_cpl": 293.6, "target_app": 1.0, "paid_app": 0}, {"date": "Jun 02", "target_leads": 20.0, "actual_leads": 20.0, "google_leads": 5.0, "meta_leads": 15.0, "target_cpl": 300, "actual_cpl": 337.3, "target_app": 1.0, "paid_app": 0}, {"date": "Jun 03", "target_leads": 20.0, "actual_leads": 19.0, "google_leads": 2.0, "meta_leads": 17.0, "target_cpl": 300, "actual_cpl": 278.4, "target_app": 1.0, "paid_app": 0}, {"date": "Jun 04", "target_leads": 20.0, "actual_leads": 40.0, "google_leads": 5.0, "meta_leads": 35.0, "target_cpl": 300, "actual_cpl": 235.1, "target_app": 1.0, "paid_app": 0}, {"date": "Jun 05", "target_leads": 20.0, "actual_leads": 37.0, "google_leads": 4.0, "meta_leads": 33.0, "target_cpl": 300, "actual_cpl": 228.0, "target_app": 1.0, "paid_app": 0}], "lead_stage": null}, {"key": "Prashanth", "label": "Prashanth Hospitals", "group": "MATRIX", "channels": ["meta", "google"], "available": true, "needs_review": false, "source_file": "Prashanth Hospital Performance Marketing - May'26.xlsx", "metric": "Appointment", "has_consulted": true, "locations": [{"name": "Kolathur", "kpi": {"spent_excl": 30085.93, "gst": 5415.47, "total_incl": 35501.4, "meta_spent": 28639.87, "meta_gst": 5155.18, "google_spent": 1446.06, "google_gst": 260.29, "meta_incl": 33795.05, "google_incl": 1706.35, "target_leads": 140, "actual_leads": 69, "meta_leads": 68, "google_leads": 1, "target_cpl": 900, "actual_cpl": 436.0, "target_app": 50, "paid_app": 1, "consulted": 0, "untouched": null}, "campaigns": [{"name": "Cardio", "amount": 10734.4836, "meta_spent": 10089.0944, "google_spent": 645.3892000000001, "target_leads": 30.0, "actual_leads": 9.0, "meta_leads": 8.0, "google_leads": 1.0, "target_cpl": 900.0, "actual_cpl": 1010.7800000000001, "target_conv": 10.0, "actual_conv": 0.0, "consulted": 0.0, "meta_excl": 8550.08, "meta_gst": 1539.0144, "google_excl": 546.94, "google_gst": 98.4492}, {"name": "Neuro", "amount": 5565.0452000000005, "meta_spent": 5510.6944, "google_spent": 54.35080000000001, "target_leads": 30.0, "actual_leads": 5.0, "meta_leads": 5.0, "google_leads": 0.0, "target_cpl": 900.0, "actual_cpl": 943.2280000000001, "target_conv": 10.0, "actual_conv": 0.0, "consulted": 0.0, "meta_excl": 4670.08, "meta_gst": 840.6143999999999, "google_excl": 46.06, "google_gst": 8.2908}, {"name": "Ortho", "amount": 6681.0774, "meta_spent": 5674.4666, "google_spent": 1006.6107999999999, "target_leads": 30.0, "actual_leads": 6.0, "meta_leads": 6.0, "google_leads": 0.0, "target_cpl": 900.0, "actual_cpl": 943.6550000000001, "target_conv": 10.0, "actual_conv": 0.0, "consulted": 0.0, "meta_excl": 4808.87, "meta_gst": 865.5966, "google_excl": 853.06, "google_gst": 153.55079999999998}, {"name": "Women Camp", "amount": 12520.7912, "meta_spent": 12520.7912, "google_spent": 0.0, "target_leads": 50.0, "actual_leads": 49.0, "meta_leads": 49.0, "google_leads": 0.0, "target_cpl": 900.0, "actual_cpl": 216.5477551020408, "target_conv": 20.0, "actual_conv": 1.0, "consulted": 0.0, "meta_excl": 10610.84, "meta_gst": 1909.9512, "google_excl": 0.0, "google_gst": 0.0}], "disposition": {"available": false, "reason": "sheet not shared with connected Google account"}}, {"name": "Velachery", "kpi": {"spent_excl": 30225.67, "gst": 5440.62, "total_incl": 35666.29, "meta_spent": 27294.06, "meta_gst": 4912.93, "google_spent": 2931.61, "google_gst": 527.69, "meta_incl": 32206.99, "google_incl": 3459.3, "target_leads": 150, "actual_leads": 46, "meta_leads": 46, "google_leads": 0, "target_cpl": 900, "actual_cpl": 657.1, "target_app": 60, "paid_app": 2, "consulted": 0, "untouched": null}, "campaigns": [{"name": "Cardio", "amount": 6570.7356, "meta_spent": 5514.081, "google_spent": 1056.6546, "target_leads": 30.0, "actual_leads": 13.0, "meta_leads": 13.0, "google_leads": 0.0, "target_cpl": 900.0, "actual_cpl": 428.34000000000003, "target_conv": 10.0, "actual_conv": 0.0, "consulted": 0.0, "meta_excl": 4672.95, "meta_gst": 841.131, "google_excl": 895.47, "google_gst": 161.1846}, {"name": "Neuro", "amount": 6716.111599999999, "meta_spent": 5585.116999999999, "google_spent": 1130.9946, "target_leads": 30.0, "actual_leads": 3.0, "meta_leads": 3.0, "google_leads": 0.0, "target_cpl": 900.0, "actual_cpl": 1897.2066666666667, "target_conv": 10.0, "actual_conv": 0.0, "consulted": 0.0, "meta_excl": 4733.15, "meta_gst": 851.9669999999999, "google_excl": 958.47, "google_gst": 172.5246}, {"name": "Ortho", "amount": 7040.5289999999995, "meta_spent": 5768.8784, "google_spent": 1271.6505999999997, "target_leads": 30.0, "actual_leads": 10.0, "meta_leads": 10.0, "google_leads": 0.0, "target_cpl": 900.0, "actual_cpl": 596.655, "target_conv": 10.0, "actual_conv": 0.0, "consulted": 0.0, "meta_excl": 4888.88, "meta_gst": 879.9984, "google_excl": 1077.6699999999998, "google_gst": 193.98059999999995}, {"name": "Gastrology", "amount": 5692.1902, "meta_spent": 5692.1902, "google_spent": 0.0, "target_leads": 30.0, "actual_leads": 7.0, "meta_leads": 7.0, "google_leads": 0.0, "target_cpl": 900.0, "actual_cpl": 689.1271428571429, "target_conv": 10.0, "actual_conv": 0.0, "consulted": 0.0, "meta_excl": 4823.89, "meta_gst": 868.3002, "google_excl": 0.0, "google_gst": 0.0}, {"name": "Women Camp", "amount": 9646.724199999999, "meta_spent": 9646.724199999999, "google_spent": 0.0, "target_leads": 30.0, "actual_leads": 13.0, "meta_leads": 13.0, "google_leads": 0.0, "target_cpl": 900.0, "actual_cpl": 628.8607692307692, "target_conv": 20.0, "actual_conv": 2.0, "consulted": 0.0, "meta_excl": 8175.189999999999, "meta_gst": 1471.5341999999996, "google_excl": 0.0, "google_gst": 0.0}], "disposition": {"available": true, "camps": [{"name": "Neuro", "total": 3, "Hot": 0, "Warm": 0, "Cold": 3, "Dead": 0, "Appointment": 0, "Consulted": 0}, {"name": "Ortho", "total": 6, "Hot": 0, "Warm": 2, "Cold": 0, "Dead": 4, "Appointment": 0, "Consulted": 0}, {"name": "Cardio", "total": 13, "Hot": 0, "Warm": 0, "Cold": 11, "Dead": 2, "Appointment": 0, "Consulted": 0}, {"name": "Gastro", "total": 6, "Hot": 0, "Warm": 0, "Cold": 6, "Dead": 0, "Appointment": 0, "Consulted": 0}, {"name": "Well Women Camp", "total": 19, "Hot": 6, "Warm": 4, "Cold": 7, "Dead": 2, "Appointment": 6, "Consulted": 0}]}}, {"name": "Gummidipoondi", "kpi": {"spent_excl": 14373.51, "gst": 2587.23, "total_incl": 16960.74, "meta_spent": 14373.51, "meta_gst": 2587.23, "google_spent": 0, "google_gst": 0, "meta_incl": 16960.74, "google_incl": 0, "target_leads": 100, "actual_leads": 21, "meta_leads": 21, "google_leads": 0, "target_cpl": 900, "actual_cpl": 684.5, "target_app": 40, "paid_app": 0, "consulted": 0, "untouched": null}, "campaigns": [{"name": "Urology", "amount": 5737.573, "meta_spent": 5737.573, "google_spent": 0.0, "target_leads": 50.0, "actual_leads": 10.0, "meta_leads": 10.0, "google_leads": 0.0, "target_cpl": 900.0, "actual_cpl": 486.235, "target_conv": 20.0, "actual_conv": 0.0, "consulted": 0.0, "meta_excl": 4862.35, "meta_gst": 875.2230000000001, "google_excl": 0.0, "google_gst": 0.0}, {"name": "Women Camp", "amount": 11223.1688, "meta_spent": 11223.1688, "google_spent": 0.0, "target_leads": 50.0, "actual_leads": 11.0, "meta_leads": 11.0, "google_leads": 0.0, "target_cpl": 900.0, "actual_cpl": 864.6509090909091, "target_conv": 20.0, "actual_conv": 0.0, "consulted": 0.0, "meta_excl": 9511.16, "meta_gst": 1712.0087999999998, "google_excl": 0.0, "google_gst": 0.0}], "disposition": {"available": true, "camps": [{"name": "Well Women Camp", "total": 10, "Hot": 3, "Warm": 2, "Cold": 3, "Dead": 2, "Appointment": 3, "Consulted": 0}, {"name": "Kidney Camp (Jun 14)", "total": 11, "Hot": 1, "Warm": 2, "Cold": 2, "Dead": 6, "Appointment": 1, "Consulted": 0}]}}], "kpi": {"spent_excl": 74685.11, "gst": 13443.32, "total_incl": 88128.43, "meta_spent": 70307.44, "meta_gst": 12655.34, "google_spent": 4377.67, "google_gst": 787.98, "target_leads": 390, "actual_leads": 136, "meta_leads": 135, "google_leads": 1, "target_app": 150, "paid_app": 3, "consulted": 0, "actual_cpl": 549.2, "target_cpl": 900, "meta_incl": 82962.78, "google_incl": 5165.65, "untouched": null}, "disp_pending": false, "disp_month": "June 2026"}, {"key": "SRM Dx", "label": "SRM Diagnostics", "group": "MATRIX", "channels": ["meta", "google"], "available": true, "needs_review": false, "source_file": "SRM Dx Performance Marketing - May'26.xlsx", "metric": "Test Scheduled", "has_consulted": false, "locations": [{"name": "SRM Diagnostics", "kpi": {"spent_excl": 68547.56, "gst": 12338.56, "total_incl": 80886.12, "meta_spent": 59212.13, "meta_gst": 10658.18, "google_spent": 9335.43, "google_gst": 1680.38, "meta_incl": 69870.31, "google_incl": 11015.81, "target_leads": 1250, "actual_leads": 265, "meta_leads": 256, "google_leads": 9, "target_cpl": 300, "actual_cpl": 258.7, "target_app": null, "paid_app": 5, "consulted": null, "untouched": null}, "campaigns": [{"name": "Health Check Chennai", "amount": 45849.13599999999, "meta_spent": 34833.32859999999, "google_spent": 11015.8074, "target_leads": 700.0, "actual_leads": 128.0, "meta_leads": 119.0, "google_leads": 9.0, "target_cpl": 300.0, "actual_cpl": 303.55625, "target_conv": null, "actual_conv": 1.0, "consulted": null, "meta_excl": 29519.769999999997, "meta_gst": 5313.558599999999, "google_excl": 9335.43, "google_gst": 1680.3774}, {"name": "Health Check CBE", "amount": 7673.020799999999, "meta_spent": 7673.020799999999, "google_spent": 0.0, "target_leads": 100.0, "actual_leads": 13.0, "meta_leads": 13.0, "google_leads": 0.0, "target_cpl": 450.0, "actual_cpl": 500.19692307692304, "target_conv": null, "actual_conv": 2.0, "consulted": null, "meta_excl": 6502.5599999999995, "meta_gst": 1170.4607999999998, "google_excl": 0.0, "google_gst": 0.0}, {"name": "Dx Franchise", "amount": 5570.225399999999, "meta_spent": 5570.225399999999, "google_spent": 0.0, "target_leads": 250.0, "actual_leads": 54.0, "meta_leads": 54.0, "google_leads": 0.0, "target_cpl": 300.0, "actual_cpl": 87.41722222222222, "target_conv": null, "actual_conv": 0.0, "consulted": null, "meta_excl": 4720.53, "meta_gst": 849.6954, "google_excl": 0.0, "google_gst": 0.0}, {"name": "Health Check Others", "amount": 10114.783, "meta_spent": 10114.783, "google_spent": 0.0, "target_leads": 100.0, "actual_leads": 19.0, "meta_leads": 19.0, "google_leads": 0.0, "target_cpl": 300.0, "actual_cpl": 451.15000000000003, "target_conv": null, "actual_conv": 2.0, "consulted": null, "meta_excl": 8571.85, "meta_gst": 1542.933, "google_excl": 0.0, "google_gst": 0.0}, {"name": "Mothers Day", "amount": 11678.9556, "meta_spent": 11678.9556, "google_spent": 0.0, "target_leads": 100.0, "actual_leads": 51.0, "meta_leads": 51.0, "google_leads": 0.0, "target_cpl": 300.0, "actual_cpl": 194.0670588235294, "target_conv": null, "actual_conv": 0.0, "consulted": null, "meta_excl": 9897.42, "meta_gst": 1781.5356, "google_excl": 0.0, "google_gst": 0.0}]}], "kpi": {"spent_excl": 68547.56, "gst": 12338.56, "total_incl": 80886.12, "meta_spent": 59212.13, "meta_gst": 10658.18, "google_spent": 9335.43, "google_gst": 1680.38, "target_leads": 1250, "actual_leads": 265, "meta_leads": 256, "google_leads": 9, "target_app": null, "paid_app": 5, "consulted": null, "actual_cpl": 258.7, "target_cpl": 300, "meta_incl": 69870.31, "google_incl": 11015.81, "untouched": null}, "disp_pending": true, "disp_month": "June 2026"}]};
+const INR = n => n==null?'&mdash;':'\u20b9'+Math.round(n).toLocaleString('en-IN');
+const NUM = n => n==null?'&mdash;':Math.round(n).toLocaleString('en-IN');
+const F1  = n => n==null?'&mdash;':(Math.round(n*10)/10).toLocaleString('en-IN');
+let charts = [];
+
+function achv(actual,target){ if(!target) return ''; const p=Math.round(actual/target*100);
+  const cls = p>=100?'up':'down'; return '<span class="badge '+cls+'">'+p+'% of target</span>'; }
+
+function card(lbl,val,sub,cls){ return '<div class="card '+(cls||'')+'"><div class="lbl">'+lbl+'</div>'+
+  '<div class="val">'+val+'</div>'+(sub?'<div class="vsub">'+sub+'</div>':'')+'</div>'; }
+
+function kpiCards(c){
+  const k=c.kpi, g=c.group, out=[];
+  if(g==='OTHER'){ // Krea: meta+google split
+    out.push(card('Total Amount (incl GST)', INR(k.total_incl), 'Excl GST <span class="g">'+INR(k.spent_excl)+'</span> &middot; GST <span class="b">'+INR(k.gst)+'</span>'));
+    out.push(card('Meta Spent (incl GST)', INR(k.meta_spent+k.meta_gst), 'Excl GST <span class="g">'+INR(k.meta_spent)+'</span> &middot; GST <span class="b">'+INR(k.meta_gst)+'</span>','blue'));
+    out.push(card('Google Spent (incl GST)', INR(k.google_spent+k.google_gst), 'Excl GST <span class="g">'+INR(k.google_spent)+'</span> &middot; GST <span class="b">'+INR(k.google_gst)+'</span>','blue'));
+    out.push(card('CRM Leads', NUM(k.actual_leads), 'Meta <span class="g">'+NUM(k.meta_leads)+'</span> &middot; Google <span class="g">'+NUM(k.google_leads)+'</span> &middot; Target '+NUM(k.target_leads)+'<br>'+achv(k.actual_leads,k.target_leads),'violet'));
+    out.push(card('Cost per Lead', INR(k.actual_cpl), 'Target '+(k.target_cpl?INR(k.target_cpl):'&mdash;'),'amber'));
+    out.push(card('Paid Applications', NUM(k.paid_app), 'Target '+NUM(k.target_app)+'<br>'+achv(k.paid_app,k.target_app),'red'));
+    if(k.untouched!=null) out.push(card('Untouched Leads', NUM(k.untouched), 'Awaiting first contact','red'));
+  } else if(g==='KARUNYA'){
+    out.push(card('Google Spent (incl GST)', INR(k.total_incl), 'Excl GST <span class="g">'+INR(k.spent_excl)+'</span> &middot; GST <span class="b">'+INR(k.gst)+'</span>'));
+    out.push(card('Google Leads', NUM(k.actual_leads), 'Target '+NUM(k.target_leads)+'<br>'+achv(k.actual_leads,k.target_leads),'violet'));
+    out.push(card('Cost per Lead', INR(k.actual_cpl), 'Target '+(k.target_cpl?INR(k.target_cpl):'&mdash;'),'amber'));
+  } else { // SRM
+    out.push(card('Amount Spent (incl GST)', INR(k.total_incl), 'Excl GST <span class="g">'+INR(k.spent_excl)+'</span> &middot; GST <span class="b">'+INR(k.gst)+'</span>'));
+    out.push(card('CRM Leads (Google)', NUM(k.actual_leads), 'Target '+NUM(k.target_leads)+' &middot; CRM '+NUM(k.crm_leads)+'<br>'+achv(k.actual_leads,k.target_leads),'violet'));
+    out.push(card('Cost per Lead', INR(k.actual_cpl), 'Target '+(k.target_cpl?INR(k.target_cpl):'&mdash;'),'amber'));
+    out.push(card('Paid Applications', NUM(k.paid_app), 'Target '+NUM(k.target_app)+'<br>'+achv(k.paid_app,k.target_app),'red'));
+    if(k.untouched!=null) out.push(card('Untouched Leads', NUM(k.untouched), 'Awaiting first contact','red'));
+  }
+  return '<div class="cards">'+out.join('')+'</div>';
+}
+
+function lineCfg(labels,sets,yLabel,money){
+  return {type:'line',data:{labels:labels,datasets:sets},options:{responsive:true,maintainAspectRatio:false,
+    interaction:{mode:'index',intersect:false},
+    plugins:{legend:{labels:{color:'#334155',usePointStyle:true,boxWidth:8,font:{size:12}}},
+      tooltip:{callbacks: money?{label:c=>c.dataset.label+': \u20b9'+Math.round(c.parsed.y).toLocaleString('en-IN')}:{}}},
+    scales:{x:{ticks:{color:'#64748b',maxRotation:0,autoSkip:true,font:{size:11}},grid:{color:'rgba(15,23,42,.08)'}},
+      y:{ticks:{color:'#64748b',font:{size:11}},grid:{color:'rgba(15,23,42,.08)'},title:{display:!!yLabel,text:yLabel,color:'#64748b'}}}}};
+}
+function ds(label,arr,color,dash){ return {label:label,data:arr,borderColor:color,backgroundColor:color+'22',
+  borderWidth:2,borderDash:dash||[],tension:.3,pointRadius:2.5,pointHoverRadius:5,fill:false,spanGaps:true}; }
+
+function renderCharts(c){
+  const s=c.series, labels=s.map(x=>x.date);
+  // Lead stage: clean ranked horizontal bars with value + % labels
+  if(c.lead_stage){
+    const ls=c.lead_stage;
+    const ctx=document.getElementById('ls_'+c.key.replace(/\W/g,''));
+    if(ctx){
+      const n=ls.labels.length;
+      const catcol={pos:'#0d9488',neu:'#94a3b8',neg:'#ef4444'};
+      const palette=ls.labels.map((_,i)=>catcol[(ls.cats&&ls.cats[i])||'neu']);
+      const valuePlugin={id:'lsvalues',afterDatasetsDraw(chart){
+        const ctx2=chart.ctx, meta=chart.getDatasetMeta(0);
+        ctx2.save(); ctx2.font='600 11px Inter,sans-serif'; ctx2.fillStyle='#475569'; ctx2.textBaseline='middle'; ctx2.textAlign='left';
+        meta.data.forEach((bar,i)=>{ const v=chart.data.datasets[0].data[i];
+          ctx2.fillText(v.toLocaleString('en-IN')+'  ('+ls.pct[i]+'%)', bar.x+8, bar.y); });
+        ctx2.restore(); }};
+      charts.push(new Chart(ctx,{type:'bar',
+        data:{labels:ls.labels,datasets:[{data:ls.leads,backgroundColor:palette,borderRadius:4,maxBarThickness:24}]},
+        options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,layout:{padding:{right:62}},
+          plugins:{legend:{display:false},
+            tooltip:{callbacks:{label:cx=>' '+cx.parsed.x.toLocaleString('en-IN')+' leads ('+ls.pct[cx.dataIndex]+'%)'}}},
+          scales:{x:{beginAtZero:true,ticks:{color:'#64748b',font:{size:11},precision:0},grid:{color:'rgba(15,23,42,.07)'}},
+            y:{ticks:{color:'#334155',font:{size:11.5,weight:'600'}},grid:{display:false}}}}
+        ,plugins:[valuePlugin]})); }
+  }
+  // Leads line
+  const lc=document.getElementById('ld_'+c.key.replace(/\W/g,''));
+  if(lc) charts.push(new Chart(lc, lineCfg(labels,[
+      ds('Target Leads',s.map(x=>x.target_leads),'#64748b',[6,4]),
+      ds('Actual Leads',s.map(x=>x.actual_leads),'#0d9488')],'Leads',false)));
+  // CPL line
+  const cc=document.getElementById('cpl_'+c.key.replace(/\W/g,''));
+  if(cc){ const sets=[ds('Actual CPL',s.map(x=>x.actual_cpl),'#d97706')];
+    if(s.some(x=>x.target_cpl!=null)) sets.unshift(ds('Target CPL',s.map(x=>x.target_cpl),'#64748b',[6,4]));
+    charts.push(new Chart(cc, lineCfg(labels,sets,'\u20b9 / lead',true))); }
+  // Paid app line
+  const pc=document.getElementById('pa_'+c.key.replace(/\W/g,''));
+  if(pc) charts.push(new Chart(pc, lineCfg(labels,[
+      ds('Target Paid App',s.map(x=>x.target_app),'#64748b',[6,4]),
+      ds('Actual Paid App',s.map(x=>x.paid_app),'#dc2626')],'Applications',false)));
+}
+
+function chartBoxes(c){
+  const id=c.key.replace(/\W/g,''); const b=[];
+  const hasPaid = c.series.some(x=>x.target_app>0||x.paid_app>0);
+  if(c.lead_stage){
+    const n=c.lead_stage.labels.length;
+    const thin = n<=1;
+    const h = Math.max(170, n*32 + 24);
+    b.push('<div class="chart-box full"><h3>Lead Stage Breakdown &mdash; leads by stage'+
+      (thin?' <span class="pill">CRM export currently lists only \u2018Untouched\u2019</span>':' <span class="pill">'+c.lead_stage.total.toLocaleString('en-IN')+' total leads</span>')+
+      '<span class="sleg"><i class="d pos"></i>converting <i class="d neu"></i>pending <i class="d neg"></i>lost</span></h3><div class="cwrap" style="height:'+h+'px"><canvas id="ls_'+id+'"></canvas></div></div>');
+  }
+  b.push('<div class="chart-box"><h3>Target Leads vs Actual Leads</h3><div class="cwrap"><canvas id="ld_'+id+'"></canvas></div></div>');
+  b.push('<div class="chart-box"><h3>Target CPL vs Actual CPL</h3><div class="cwrap"><canvas id="cpl_'+id+'"></canvas></div></div>');
+  if(hasPaid) b.push('<div class="chart-box"><h3>Target Paid Application vs Actual Paid Application</h3><div class="cwrap"><canvas id="pa_'+id+'"></canvas></div></div>');
+  return '<div class="charts">'+b.join('')+'</div>';
+}
+
+function metStatus(c){
+  const k=c.kpi; let met=0,appl=0; const d={};
+  if(k.target_leads>0){ appl++; d.leads=(k.actual_leads>=k.target_leads); if(d.leads)met++; } else d.leads=null;
+  if(k.target_cpl){ appl++; d.cpl=(k.actual_cpl!=null && k.actual_cpl<=k.target_cpl); if(d.cpl)met++; } else d.cpl=null;
+  if(k.target_app>0){ appl++; d.paid=(k.paid_app>=k.target_app); if(d.paid)met++; } else d.paid=null;
+  const status = (appl>0 && met===appl) ? 'ok' : (met===0 ? 'no' : 'mid');
+  return {met,appl,d,status};
+}
+function flag(ok){ return ok===null?'<span class="mini">n/a</span>':(ok?'<span class="tag ok">on target</span>':'<span class="tag no">below</span>'); }
+function showOverview(){
+  charts.forEach(ch=>ch.destroy()); charts=[];
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  const ov=document.getElementById('tabovw'); if(ov) ov.classList.add('active');
+  const avail=DATA.colleges.filter(c=>c.available);
+  const rows=avail.map(c=>({c,s:metStatus(c)}));
+  const onT=rows.filter(r=>r.s.status==='ok');
+  const midT=rows.filter(r=>r.s.status==='mid');
+  const offT=rows.filter(r=>r.s.status==='no');
+  const totalSpend=avail.reduce((a,c)=>a+(c.kpi.total_incl||0),0);
+  const attention=midT.concat(offT);
+  let ins='<div class="ins">'+
+    '<div class="insbox"><div class="t">On Target</div><div class="v" style="color:#15803d">'+onT.length+' / '+rows.length+'</div><div class="d">Meeting every applicable target</div></div>'+
+    '<div class="insbox"><div class="t">Need Attention</div><div class="v" style="color:#b91c1c">'+attention.length+'</div><div class="d">'+(attention.map(r=>r.c.label).join(', ')||'None')+'</div></div>'+
+    '<div class="insbox"><div class="t">Total Spend (incl GST)</div><div class="v">'+INR(totalSpend)+'</div><div class="d">Across '+avail.length+' active campuses, MTD</div></div>'+
+    '</div>';
+  let narr='<div class="note"><b style="color:#15803d">Achieving all targets:</b> '+(onT.map(r=>'<span class="tag ok">'+r.c.label+'</span>').join('')||'&mdash;')+
+    '<br><b style="color:#b45309">Partially:</b> '+(midT.map(r=>'<span class="tag mid">'+r.c.label+'</span>').join('')||'&mdash;')+
+    '<br><b style="color:#b91c1c">Below target:</b> '+(offT.map(r=>'<span class="tag no">'+r.c.label+'</span>').join('')||'&mdash;')+'</div>';
+  const chn=c=>(c.group==='OTHER'||c.group==='MATRIX')?'Meta + Google':'Google';
+  let t='<table class="tbl"><thead><tr><th>Campus</th><th>Channel</th><th>Spend (incl)</th><th>Leads vs Target</th><th>CPL vs Target</th><th>Conv. vs Target</th><th>Status</th></tr></thead><tbody>';
+  rows.forEach(({c,s})=>{ const k=c.kpi;
+    const lp=k.target_leads>0?' <span class="mini">('+Math.round(k.actual_leads/k.target_leads*100)+'%)</span>':'';
+    const leadCell='<span class="num">'+NUM(k.actual_leads)+'</span> / '+NUM(k.target_leads)+lp+' '+flag(s.d.leads);
+    const cplCell=k.target_cpl?('<span class="num">'+INR(k.actual_cpl)+'</span> / '+INR(k.target_cpl)+' '+flag(s.d.cpl)):'<span class="num">'+INR(k.actual_cpl)+'</span> <span class="mini">no target</span>';
+    const paidCell=k.target_app>0?('<span class="num">'+NUM(k.paid_app)+'</span> / '+NUM(k.target_app)+' '+flag(s.d.paid)):'<span class="mini">n/a</span>';
+    const stTxt=s.status==='ok'?'On Target':(s.status==='no'?'Below Target':'Mixed');
+    t+='<tr><td class="cname">'+c.label+'</td><td class="mini">'+chn(c)+'</td><td class="num">'+INR(k.total_incl)+'</td><td>'+leadCell+'</td><td>'+cplCell+'</td><td>'+paidCell+'</td><td><span class="st '+s.status+'">'+stTxt+'</span></td></tr>';
+  });
+  t+='</tbody></table>';
+  // ---- Campaign-level performance for MATRIX clients ----
+  const mClients=avail.filter(c=>c.group==='MATRIX');
+  let camp='';
+  if(mClients.length){
+    camp+='<div class="panel-title" style="margin-top:28px">Campaign-Level Performance</div>';
+    mClients.forEach(c=>{
+      c.locations.forEach(loc=>{
+        const head=(c.locations.length>1)?(c.label+' &mdash; '+loc.name):c.label;
+        camp+='<div style="font-weight:700;color:var(--head);font-size:13px;margin:16px 0 8px">'+head+' <span class="pill">'+loc.campaigns.length+' campaigns</span></div>';
+        camp+='<table class="tbl"><thead><tr><th>Campaign</th><th>Spend</th><th>Leads vs Target</th><th>CPL vs Target</th><th>'+c.metric+' vs Target</th><th>Status</th></tr></thead><tbody>';
+        loc.campaigns.forEach(cp=>{
+          const sL=cp.target_leads?(cp.actual_leads>=cp.target_leads):null;
+          const sC=cp.target_cpl?(cp.actual_cpl!=null && cp.actual_cpl<=cp.target_cpl):null;
+          const sV=(cp.target_conv!=null && cp.target_conv>0)?(cp.actual_conv>=cp.target_conv):null;
+          let met=0,appl=0; [sL,sC,sV].forEach(x=>{ if(x!==null){appl++; if(x)met++;} });
+          const st=(appl>0&&met===appl)?'ok':(met===0?'no':'mid');
+          const lp=cp.target_leads?' <span class="mini">('+Math.round(cp.actual_leads/cp.target_leads*100)+'%)</span>':'';
+          const convCell=(cp.target_conv!=null)?('<span class="num">'+NUM(cp.actual_conv)+'</span> / '+NUM(cp.target_conv)+' '+flag(sV)):('<span class="num">'+NUM(cp.actual_conv)+'</span> <span class="mini">no target</span>');
+          camp+='<tr><td class="cname">'+cp.name+'</td>'+
+            '<td class="num">'+INR(cp.amount)+'</td>'+
+            '<td><span class="num">'+NUM(cp.actual_leads)+'</span> / '+NUM(cp.target_leads)+lp+' '+flag(sL)+'</td>'+
+            '<td><span class="num">'+INR(cp.actual_cpl)+'</span> / '+INR(cp.target_cpl)+' '+flag(sC)+'</td>'+
+            '<td>'+convCell+'</td>'+
+            '<td><span class="st '+st+'">'+(st==='ok'?'On Target':(st==='no'?'Below':'Mixed'))+'</span></td></tr>';
+        });
+        camp+='</tbody></table>';
+      });
+    });
+  }
+  document.getElementById('panel').innerHTML='<div class="panel-title">Key Insights &mdash; Target Achievement <span class="pill">'+avail.length+' campuses</span></div>'+ins+narr+t+camp;
+}
+let matrixSel={}; let curMatrixClient=null;
+function pickLoc(i){ if(curMatrixClient){ matrixSel[curMatrixClient.key]=i; renderMatrix(curMatrixClient); } }
+function matrixKpis(c,loc){
+  const k=loc.kpi, out=[];
+  out.push(card('Amount Spent (incl GST)', INR(k.total_incl), 'Meta <span class="g">'+INR(k.meta_incl)+'</span> &middot; Google <span class="g">'+INR(k.google_incl)+'</span><br>Excl GST '+INR(k.spent_excl)+' &middot; GST '+INR(k.gst)));
+  out.push(card('Actual Leads vs Target', NUM(k.actual_leads)+' / '+NUM(k.target_leads), 'Meta <span class="g">'+NUM(k.meta_leads)+'</span> &middot; Google <span class="g">'+NUM(k.google_leads)+'</span><br>'+achv(k.actual_leads,k.target_leads),'violet'));
+  out.push(card('Cost per Lead', INR(k.actual_cpl), 'Target '+INR(k.target_cpl),'amber'));
+  out.push(card(c.metric+' vs Target', NUM(k.paid_app)+(k.target_app!=null?' / '+NUM(k.target_app):''), (k.target_app!=null?achv(k.paid_app,k.target_app):'<span class="mini">no target in sheet</span>'),'red'));
+  if(c.has_consulted) out.push(card('Consulted', NUM(k.consulted), 'Patients consulted','blue'));
+  return '<div class="cards">'+out.join('')+'</div>';
+}
+function matrixTable(c,loc){
+  const m=c.metric;
+  const cols=['Campaign','Amount Spent','Meta Spent','Google Spent','Target Leads','Actual Leads','Meta Leads','Google Leads','Target CPL','Actual CPL','Target '+m,'Actual '+m];
+  if(c.has_consulted) cols.push('Consulted');
+  const row=(name,d,tot)=>{
+    let cells=['<td class="cn">'+name+'</td>','<td>'+INR(d.amount)+'</td>','<td>'+INR(d.meta_spent)+'</td>','<td>'+INR(d.google_spent)+'</td>',
+      '<td>'+NUM(d.target_leads)+'</td>','<td>'+NUM(d.actual_leads)+'</td>','<td>'+NUM(d.meta_leads)+'</td>','<td>'+NUM(d.google_leads)+'</td>',
+      '<td>'+INR(d.target_cpl)+'</td>','<td>'+INR(d.actual_cpl)+'</td>',
+      '<td>'+(d.target_conv!=null?NUM(d.target_conv):'&mdash;')+'</td>','<td>'+(d.actual_conv!=null?NUM(d.actual_conv):'&mdash;')+'</td>'];
+    if(c.has_consulted) cells.push('<td>'+(d.consulted!=null?NUM(d.consulted):'&mdash;')+'</td>');
+    return '<tr'+(tot?' class="tot"':'')+'>'+cells.join('')+'</tr>';
+  };
+  let body=loc.campaigns.map(cp=>row(cp.name,cp,false)).join('');
+  const k=loc.kpi;
+  body+=row('Total',{amount:k.total_incl,meta_spent:k.meta_incl,google_spent:k.google_incl,target_leads:k.target_leads,actual_leads:k.actual_leads,meta_leads:k.meta_leads,google_leads:k.google_leads,target_cpl:k.target_cpl,actual_cpl:k.actual_cpl,target_conv:k.target_app,actual_conv:k.paid_app,consulted:k.consulted},true);
+  return '<div class="chart-box full"><h3>Campaigns Analysis</h3><div class="mtxwrap"><table class="mtx"><thead><tr>'+cols.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+body+'</tbody></table></div></div>';
+}
+function dispSection(c,loc){
+  const CC={Appointment:'appointment',Consulted:'consulted',Interested:'interested',Unreachable:'unreachable',Lost:'lost'};
+  const B=['Appointment','Consulted','Interested','Unreachable','Lost'];
+  const d=loc.disposition;
+  const title='Lead Disposition &mdash; '+(c.disp_month||'June')+' (per camp)';
+  if(!d){ if(c.disp_pending) return '<div class="chart-box full"><h3>'+title+'</h3><div class="note">SRM Diagnostics disposition is being prepared from its per-city CRM sheets.</div></div>'; return ''; }
+  if(!d.available) return '<div class="chart-box full"><h3>'+title+'</h3><div class="note">'+(d.reason||'Not available')+'</div></div>';
+  const legend='<div class="displeg">'+B.map(b=>'<span><i class="dispseg '+CC[b]+'"></i>'+b+'</span>').join('')+'</div>';
+  const rows=d.camps.map(cp=>{
+    const segs=B.map(b=>{ const v=cp[b]||0; return v>0?'<div class="dispseg '+CC[b]+'" style="flex:'+v+' 0 0" title="'+b+': '+v+'">'+(v>=2?v:'')+'</div>':''; }).join('');
+    return '<div class="disprow"><div class="dispname">'+cp.name+' <span class="mini">('+cp.total+' leads)</span></div><div class="dispbar">'+segs+'</div></div>';
+  }).join('');
+  return '<div class="chart-box full"><h3>'+title+'</h3>'+legend+'<div class="disp">'+rows+'</div></div>';
+}
+function renderMatrix(c){
+  charts.forEach(ch=>ch.destroy()); charts=[]; curMatrixClient=c;
+  const li=matrixSel[c.key]||0; const loc=c.locations[li];
+  let sub='';
+  if(c.locations.length>1) sub='<div class="subtabs">'+c.locations.map((L,i)=>'<div class="subtab'+(i===li?' active':'')+'" onclick="pickLoc('+i+')">'+L.name+'</div>').join('')+'</div>';
+  document.getElementById('panel').innerHTML='<div class="panel-title">'+c.label+' <span class="pill">Meta + Google</span><span class="pill">'+(c.locations.length>1?c.locations.length+' locations':'campaign view')+'</span></div>'+sub+matrixKpis(c,loc)+matrixTable(c,loc);
+}
+function show(idx){
+  charts.forEach(ch=>ch.destroy()); charts=[];
+  const avail = DATA.colleges.filter(c=>c.available);
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  const tabEl=document.getElementById('tab'+idx); if(tabEl) tabEl.classList.add('active');
+  const c=avail[idx];
+  if(c.group==='MATRIX'){ renderMatrix(c); return; }
+  let chTag = '';
+  if(c.group==='OTHER') chTag='Meta + Google';
+  else if(c.group==='KARUNYA') chTag='Google only';
+  else chTag='Google';
+  const p=document.getElementById('panel');
+  const rev = c.needs_review ? '<span class="pill" style="background:#3a2a12;color:#f0a93b;border-color:#5a4420">needs review</span>' : '';
+  p.innerHTML = '<div class="panel-title">'+c.label+' <span class="pill">'+chTag+'</span>'+
+    '<span class="pill">'+c.series.length+' active days</span>'+rev+'</div>'+
+    kpiCards(c)+ chartBoxes(c);
+  renderCharts(c);
+}
+
+function init(){
+  const tabs=document.getElementById('tabs');
+  const avail=DATA.colleges.filter(c=>c.available);
+  let ai=0;
+  if(avail.length){ const ovt=document.createElement('div'); ovt.className='tab'; ovt.id='tabovw';
+    ovt.textContent='★ Key Insights'; ovt.onclick=showOverview; tabs.appendChild(ovt); }
+  DATA.colleges.forEach(c=>{
+    const t=document.createElement('div');
+    if(c.available){ const idx=ai++; t.className='tab'; t.id='tab'+idx;
+      t.textContent=c.label; t.onclick=()=>show(idx); }
+    else { t.className='tab disabled';
+      const st=(c.reason&&c.reason.indexOf('sync')>=0)?'syncing':'no data';
+      t.innerHTML=c.label+' &middot; <span style="font-size:10px">'+st+'…</span>'; }
+    tabs.appendChild(t);
+  });
+  document.getElementById('srccount').textContent = avail.length+' of '+DATA.colleges.length+' clients loaded';
+  if(avail.length){ showOverview(); } else { document.getElementById('panel').innerHTML='<div class="note">No client data available yet.</div>'; }
+}
+init();
+</script></body></html>
